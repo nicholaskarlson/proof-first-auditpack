@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+
+	"github.com/nicholaskarlson/proof-first-auditpack/internal/auditpack"
 )
 
 func main() {
@@ -34,7 +37,7 @@ func usage() {
 	fmt.Println("  auditpack demo --out ./out")
 	fmt.Println("  auditpack run  --in  <dir> --out <dir>")
 	fmt.Println()
-	fmt.Println("v0: writes manifest.json + manifest.sha256 + run_meta.json")
+	fmt.Println("v0: writes manifest.json + run_meta.json + manifest.sha256 (deterministic)")
 }
 
 func demoCmd(args []string) {
@@ -42,8 +45,24 @@ func demoCmd(args []string) {
 	outDir := fs.String("out", "./out", "output directory")
 	_ = fs.Parse(args)
 
-	_ = os.MkdirAll(*outDir, 0o755)
-	fmt.Printf("Demo placeholder: would write audit pack to %s\n", *outDir)
+	// Create a tiny deterministic demo input under outDir.
+	inDir := filepath.Join(*outDir, "demo_input")
+	_ = os.MkdirAll(inDir, 0o755)
+
+	_ = os.WriteFile(filepath.Join(inDir, "hello.txt"), []byte("hello\n"), 0o644)
+	_ = os.MkdirAll(filepath.Join(inDir, "nested"), 0o755)
+	_ = os.WriteFile(filepath.Join(inDir, "nested", "world.txt"), []byte("world\n"), 0o644)
+
+	opts := auditpack.DefaultOptions()
+	opts.Version = "dev"
+	opts.InputLabel = "demo_input"
+
+	if err := auditpack.Build(inDir, *outDir, opts); err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Demo complete. Wrote audit pack to %s\n", *outDir)
 }
 
 func runCmd(args []string) {
@@ -59,6 +78,15 @@ func runCmd(args []string) {
 		os.Exit(2)
 	}
 
-	_ = os.MkdirAll(*outDir, 0o755)
-	fmt.Printf("Run placeholder: would hash %s and write audit pack to %s\n", *inDir, *outDir)
+	opts := auditpack.DefaultOptions()
+	opts.Version = "dev"
+	// Record the input path as provided (stable for relative paths).
+	opts.InputLabel = *inDir
+
+	if err := auditpack.Build(*inDir, *outDir, opts); err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Run complete. Wrote audit pack to %s\n", *outDir)
 }
