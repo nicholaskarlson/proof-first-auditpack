@@ -1,0 +1,9 @@
+{
+  "tool": "proof-first-auditpack",
+  "version": "dev",
+  "input": "fixtures/input/case01",
+  "summary": {
+    "file_count": 2,
+    "total_bytes": 12
+  }
+}
