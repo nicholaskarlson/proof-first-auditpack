@@ -1,0 +1,13 @@
+# build artifacts
+bin/
+dist/
+out/
+
+# editor/OS noise
+.DS_Store
+Thumbs.db
+
+# Go
+*.exe
+*.test
+*.out
