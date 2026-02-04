@@ -11,3 +11,9 @@ Thumbs.db
 *.exe
 *.test
 *.out
+
+# local scratch / build artifacts
+/tmp_in/
+/out/
+/bin/
+*.patch
