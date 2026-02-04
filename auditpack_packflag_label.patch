@@ -1,0 +1,202 @@
+diff -ruN /mnt/data/auditpack_baseline/proof-first-auditpack-main/README.md /mnt/data/auditpack_work/proof-first-auditpack-main/README.md
+--- /mnt/data/auditpack_baseline/proof-first-auditpack-main/README.md	2026-02-04 02:50:15.000000000 +0000
++++ /mnt/data/auditpack_work/proof-first-auditpack-main/README.md	2026-02-04 03:58:52.343938500 +0000
+@@ -53,9 +53,12 @@
+ ### Build a pack
+ 
+ ```bash
+-go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir
++go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir \
++  --label fixtures/input/case01
+ ```
+ 
++`--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
++
+ ### Verify a pack
+ 
+ Verifies `manifest.sha256` (pack output integrity) and basic invariants on `manifest.json` (sorted paths, uniqueness, stable totals).
+diff -ruN /mnt/data/auditpack_baseline/proof-first-auditpack-main/cmd/auditpack/main.go /mnt/data/auditpack_work/proof-first-auditpack-main/cmd/auditpack/main.go
+--- /mnt/data/auditpack_baseline/proof-first-auditpack-main/cmd/auditpack/main.go	2026-02-04 02:50:15.000000000 +0000
++++ /mnt/data/auditpack_work/proof-first-auditpack-main/cmd/auditpack/main.go	2026-02-04 03:57:43.346476979 +0000
+@@ -39,8 +39,8 @@
+ 	fmt.Println()
+ 	fmt.Println("Usage:")
+ 	fmt.Println("  auditpack demo   --out <dir>")
+-	fmt.Println("  auditpack run    --in  <dir> --out <dir>")
+-	fmt.Println("  auditpack verify --out <dir> [--in <dir>] [--strict]")
++	fmt.Println("  auditpack run    --in  <dir> --out <dir> [--label <string>]")
++	fmt.Println("  auditpack verify --pack <dir> [--in <dir>] [--strict]")
+ 	fmt.Println("  auditpack self-check [--keep] [--strict]")
+ 	fmt.Println()
+ 	fmt.Println("v0: writes manifest.json + run_meta.json + manifest.sha256 (deterministic)")
+@@ -76,6 +76,7 @@
+ 	fs := flag.NewFlagSet("run", flag.ExitOnError)
+ 	inDir := fs.String("in", "", "input directory")
+ 	outDir := fs.String("out", "./out", "output directory")
++	label := fs.String("label", "", "optional: stable label recorded in manifest/meta (useful when --in is absolute)")
+ 	_ = fs.Parse(args)
+ 
+ 	if *inDir == "" {
+@@ -87,8 +88,12 @@
+ 
+ 	opts := auditpack.DefaultOptions()
+ 	opts.Version = "dev"
+-	// Record the input path as provided (stable for relative paths).
+-	opts.InputLabel = *inDir
++	// Record a stable label if provided; otherwise record the path as provided.
++	if *label != "" {
++		opts.InputLabel = *label
++	} else {
++		opts.InputLabel = *inDir
++	}
+ 
+ 	if err := auditpack.Build(*inDir, *outDir, opts); err != nil {
+ 		fmt.Println("Error:", err)
+@@ -100,19 +105,41 @@
+ 
+ func verifyCmd(args []string) {
+ 	fs := flag.NewFlagSet("verify", flag.ExitOnError)
+-	outDir := fs.String("out", "./out", "audit pack directory")
++	packDir := fs.String("pack", "./out", "audit pack directory")
++	outDir := fs.String("out", "", "deprecated alias for --pack")
+ 	inDir := fs.String("in", "", "optional: original input directory to verify against manifest.json")
+ 	strict := fs.Bool("strict", false, "if set: fail on extra input files not listed in manifest.json")
+ 	_ = fs.Parse(args)
+ 
+-	if err := auditpack.VerifyPack(*outDir); err != nil {
++	// Back-compat: allow --out as alias for --pack.
++	packExplicit := false
++	outExplicit := false
++	fs.Visit(func(f *flag.Flag) {
++		switch f.Name {
++		case "pack":
++			packExplicit = true
++		case "out":
++			outExplicit = true
++		}
++	})
++
++	pack := *packDir
++	if outExplicit && !packExplicit {
++		pack = *outDir
++	}
++	if outExplicit && packExplicit && *outDir != "" && *outDir != *packDir {
++		fmt.Println("Error: --pack and --out were both provided with different values")
++		os.Exit(2)
++	}
++
++	if err := auditpack.VerifyPack(pack); err != nil {
+ 		fmt.Println("VERIFY FAIL:", err)
+ 		os.Exit(1)
+ 	}
+ 	fmt.Println("OK: pack integrity (manifest.sha256 + manifest.json invariants)")
+ 
+ 	if *inDir != "" {
+-		if err := auditpack.VerifyInput(*inDir, *outDir, *strict); err != nil {
++		if err := auditpack.VerifyInput(*inDir, pack, *strict); err != nil {
+ 			fmt.Println("VERIFY FAIL:", err)
+ 			os.Exit(1)
+ 		}
+diff -ruN /mnt/data/auditpack_baseline/proof-first-auditpack-main/docs/HANDOFF.md /mnt/data/auditpack_work/proof-first-auditpack-main/docs/HANDOFF.md
+--- /mnt/data/auditpack_baseline/proof-first-auditpack-main/docs/HANDOFF.md	2026-02-04 02:50:15.000000000 +0000
++++ /mnt/data/auditpack_work/proof-first-auditpack-main/docs/HANDOFF.md	2026-02-04 03:59:01.193078907 +0000
+@@ -65,9 +65,13 @@
+ ```bash
+ # input: directory tree to record
+ # out:   directory that will receive manifest/meta/sha files
+-./bin/auditpack run --in /path/to/input_dir --out /path/to/out_dir
++./bin/auditpack run --in /path/to/input_dir --out /path/to/out_dir \
++  --label fixtures/input/case01
+ ```
+ 
++Notes:
++- `--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
++
+ ### Demo mode (creates a tiny input tree for you)
+ 
+ ```bash
+diff -ruN /mnt/data/auditpack_baseline/proof-first-auditpack-main/tests/cli_test.go /mnt/data/auditpack_work/proof-first-auditpack-main/tests/cli_test.go
+--- /mnt/data/auditpack_baseline/proof-first-auditpack-main/tests/cli_test.go	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/auditpack_work/proof-first-auditpack-main/tests/cli_test.go	2026-02-04 03:59:30.248015939 +0000
+@@ -0,0 +1,81 @@
++package tests
++
++import (
++	"encoding/json"
++	"os"
++	"os/exec"
++	"path/filepath"
++	"runtime"
++	"testing"
++
++	"github.com/nicholaskarlson/proof-first-auditpack/internal/manifest"
++)
++
++func buildAuditpackBinary(t *testing.T) (repoRoot string, binPath string) {
++	t.Helper()
++
++	// Package tests is in ./tests, so repo root is ..
++	repoRoot = filepath.Clean(filepath.Join(".."))
++	absRoot, err := filepath.Abs(repoRoot)
++	if err != nil {
++		t.Fatalf("abs repo root: %v", err)
++	}
++	repoRoot = absRoot
++
++	binName := "auditpack"
++	if runtime.GOOS == "windows" {
++		binName += ".exe"
++	}
++	binPath = filepath.Join(t.TempDir(), binName)
++
++	cmd := exec.Command("go", "build", "-o", binPath, "./cmd/auditpack")
++	cmd.Dir = repoRoot
++	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
++	out, err := cmd.CombinedOutput()
++	if err != nil {
++		t.Fatalf("go build failed: %v\n%s", err, string(out))
++	}
++	return repoRoot, binPath
++}
++
++func runCmdOK(t *testing.T, bin string, args ...string) {
++	t.Helper()
++	cmd := exec.Command(bin, args...)
++	out, err := cmd.CombinedOutput()
++	if err != nil {
++		t.Fatalf("command failed: %v\nargs=%v\n%s", err, args, string(out))
++	}
++}
++
++func TestCLI_VerifyFlagAliasAndLabel(t *testing.T) {
++	repoRoot, bin := buildAuditpackBinary(t)
++
++	inDir := filepath.Join(repoRoot, "fixtures", "input", "case01")
++	outDir := filepath.Join(t.TempDir(), "out")
++
++	// Run with a stable label so manifest/meta are portable even if --in is absolute.
++	runCmdOK(t, bin,
++		"run",
++		"--in", inDir,
++		"--out", outDir,
++		"--label", "fixtures/input/case01",
++	)
++
++	// Confirm label was written into manifest.json.
++	manBytes, err := os.ReadFile(filepath.Join(outDir, "manifest.json"))
++	if err != nil {
++		t.Fatalf("read manifest.json: %v", err)
++	}
++	var m manifest.Manifest
++	if err := json.Unmarshal(manBytes, &m); err != nil {
++		t.Fatalf("parse manifest.json: %v", err)
++	}
++	if m.Input != "fixtures/input/case01" {
++		t.Fatalf("manifest input label mismatch: got %q", m.Input)
++	}
++
++	// Verify with the preferred flag.
++	runCmdOK(t, bin, "verify", "--pack", outDir)
++	// Verify with the legacy alias.
++	runCmdOK(t, bin, "verify", "--out", outDir)
++}
