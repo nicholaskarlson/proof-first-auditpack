@@ -27,7 +27,23 @@ This is intentionally a **run-once, handoff-friendly CLI**.
 ## Requirements
 
 - Go (any reasonably recent version; CI uses `setup-go` with `stable`)
-- Linux/macOS/Windows (paths are normalized in output)
+- Linux/macOS/Windows
+
+---
+
+## Acceptance tests (project definition of “done”)
+
+These must pass on a clean checkout:
+
+```bash
+go test ./...
+```
+
+Golden fixture check (included in tests):
+
+- `fixtures/input/case01/*` is the canonical example input tree.
+- `fixtures/expected/case01/*` is the canonical expected output pack.
+- Tests confirm outputs match expected **byte-for-byte**.
 
 ---
 
@@ -36,7 +52,6 @@ This is intentionally a **run-once, handoff-friendly CLI**.
 From the repo root:
 
 ```bash
-go test ./...
 mkdir -p bin
 go build -o bin/auditpack ./cmd/auditpack
 ```
@@ -62,7 +77,65 @@ ls -la ./out
 
 ---
 
-## Outputs
+## Verify
+
+There are **two** distinct verification modes:
+
+### 1) Verify the audit pack outputs
+
+This checks that the *pack files themselves* were not modified after creation.
+
+#### Option A: standard tool (no Go required)
+
+From inside the output directory:
+
+```bash
+sha256sum -c manifest.sha256
+```
+
+Expected output should show `OK` for each line.
+
+#### Option B: built-in verifier
+
+```bash
+./bin/auditpack verify --pack /path/to/out_dir
+```
+
+This:
+- validates `manifest.sha256`
+- checks `manifest.json` invariants (sorted/unique paths; stable totals)
+
+### 2) Verify an input tree matches the manifest (optional)
+
+If you still have the original input directory, you can confirm its file hashes match what was recorded in `manifest.json`:
+
+```bash
+./bin/auditpack verify --pack /path/to/out_dir --in /path/to/input_dir --strict
+```
+
+Notes:
+- `--in` is optional. Without it, verification is “pack integrity only”.
+- `--strict` fails if extra files exist under `--in` that are not in the manifest.
+
+---
+
+## Self-check (client-friendly smoke test)
+
+Runs **build -> verify -> OK** in a temporary directory and prints `OK` if everything works.
+
+```bash
+./bin/auditpack self-check
+```
+
+To keep the temp directory (for inspection):
+
+```bash
+./bin/auditpack self-check --keep
+```
+
+---
+
+## Outputs (what to hand to someone)
 
 The output directory will contain:
 
@@ -79,37 +152,6 @@ The output directory will contain:
 
 ---
 
-## Verify (no custom tooling required)
-
-From inside the output directory:
-
-```bash
-sha256sum -c manifest.sha256
-```
-
-Expected output should show `OK` for each line.
-
-> Note: `manifest.sha256` verifies the audit pack *outputs*.
-> The `manifest.json` contains the per-file hashes for the original input tree.
-
----
-
-## Acceptance tests (project definition of “done”)
-
-These must pass on a clean checkout:
-
-```bash
-go test ./...
-```
-
-Golden fixture check (included in tests):
-
-- `fixtures/input/case01/*` is the canonical example input tree.
-- `fixtures/expected/case01/*` is the canonical expected output pack.
-- Tests confirm outputs match expected **byte-for-byte**.
-
----
-
 ## Handoff checklist
 
 A new developer should be able to:
@@ -118,16 +160,24 @@ A new developer should be able to:
 2. Run `go test ./...` successfully
 3. Build `bin/auditpack`
 4. Run `auditpack run --in ... --out ...`
-5. Verify the output pack with `sha256sum -c manifest.sha256`
-6. Re-run and confirm outputs are stable (optional but recommended)
+5. Verify the output pack with either:
+   - `sha256sum -c manifest.sha256`, or
+   - `auditpack verify --pack ...`
+6. (Optional) Verify an input tree matches the manifest:
+   - `auditpack verify --pack ... --in ... --strict`
+7. Run `auditpack self-check` and see `OK`
 
 ---
 
 ## Common pitfalls / troubleshooting
 
-- **CI fails but local passes:** make sure all files are committed (fixtures + internal packages).
-- **Hidden Unicode warning:** avoid copy/pasting CLI code from rich text sources. Re-run `gofmt` and keep files UTF-8.
+- **CI fails but local passes:** ensure all new files are committed (fixtures + internal packages + tests).
+- **Release notes run commands unexpectedly:** if you see `auditpack: command not found` when running `gh release create`,
+  it’s usually because backticks were evaluated by your shell. Prefer:
+  - a notes file: `gh release create vX.Y.Z --notes-file RELEASE_NOTES.md`
+  - or single quotes around `--notes '...no backticks...'`
 - **Empty input directory:** v0 fails fast if no regular files are found under `--in`.
+- **Line endings:** keep files UTF-8; this repo enforces LF via `.gitattributes`.
 
 ---
 
