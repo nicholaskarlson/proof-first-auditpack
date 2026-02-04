@@ -53,8 +53,11 @@ make self-check
 ### Build a pack
 
 ```bash
-go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir
+go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir \
+  --label fixtures/input/case01
 ```
+
+`--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
 
 ### Verify a pack
 

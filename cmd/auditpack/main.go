@@ -39,8 +39,8 @@ func usage() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  auditpack demo   --out <dir>")
-	fmt.Println("  auditpack run    --in  <dir> --out <dir>")
-	fmt.Println("  auditpack verify --out <dir> [--in <dir>] [--strict]")
+	fmt.Println("  auditpack run    --in  <dir> --out <dir> [--label <string>]")
+	fmt.Println("  auditpack verify --pack <dir> [--in <dir>] [--strict]")
 	fmt.Println("  auditpack self-check [--keep] [--strict]")
 	fmt.Println()
 	fmt.Println("v0: writes manifest.json + run_meta.json + manifest.sha256 (deterministic)")
@@ -76,6 +76,7 @@ func runCmd(args []string) {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	inDir := fs.String("in", "", "input directory")
 	outDir := fs.String("out", "./out", "output directory")
+	label := fs.String("label", "", "optional: stable label recorded in manifest/meta (useful when --in is absolute)")
 	_ = fs.Parse(args)
 
 	if *inDir == "" {
@@ -87,8 +88,12 @@ func runCmd(args []string) {
 
 	opts := auditpack.DefaultOptions()
 	opts.Version = "dev"
-	// Record the input path as provided (stable for relative paths).
-	opts.InputLabel = *inDir
+	// Record a stable label if provided; otherwise record the path as provided.
+	if *label != "" {
+		opts.InputLabel = *label
+	} else {
+		opts.InputLabel = *inDir
+	}
 
 	if err := auditpack.Build(*inDir, *outDir, opts); err != nil {
 		fmt.Println("Error:", err)
@@ -100,19 +105,41 @@ func runCmd(args []string) {
 
 func verifyCmd(args []string) {
 	fs := flag.NewFlagSet("verify", flag.ExitOnError)
-	outDir := fs.String("out", "./out", "audit pack directory")
+	packDir := fs.String("pack", "./out", "audit pack directory")
+	outDir := fs.String("out", "", "deprecated alias for --pack")
 	inDir := fs.String("in", "", "optional: original input directory to verify against manifest.json")
 	strict := fs.Bool("strict", false, "if set: fail on extra input files not listed in manifest.json")
 	_ = fs.Parse(args)
 
-	if err := auditpack.VerifyPack(*outDir); err != nil {
+	// Back-compat: allow --out as alias for --pack.
+	packExplicit := false
+	outExplicit := false
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "pack":
+			packExplicit = true
+		case "out":
+			outExplicit = true
+		}
+	})
+
+	pack := *packDir
+	if outExplicit && !packExplicit {
+		pack = *outDir
+	}
+	if outExplicit && packExplicit && *outDir != "" && *outDir != *packDir {
+		fmt.Println("Error: --pack and --out were both provided with different values")
+		os.Exit(2)
+	}
+
+	if err := auditpack.VerifyPack(pack); err != nil {
 		fmt.Println("VERIFY FAIL:", err)
 		os.Exit(1)
 	}
 	fmt.Println("OK: pack integrity (manifest.sha256 + manifest.json invariants)")
 
 	if *inDir != "" {
-		if err := auditpack.VerifyInput(*inDir, *outDir, *strict); err != nil {
+		if err := auditpack.VerifyInput(*inDir, pack, *strict); err != nil {
 			fmt.Println("VERIFY FAIL:", err)
 			os.Exit(1)
 		}

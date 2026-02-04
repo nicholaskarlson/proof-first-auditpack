@@ -65,8 +65,12 @@ go build -o bin/auditpack ./cmd/auditpack
 ```bash
 # input: directory tree to record
 # out:   directory that will receive manifest/meta/sha files
-./bin/auditpack run --in /path/to/input_dir --out /path/to/out_dir
+./bin/auditpack run --in /path/to/input_dir --out /path/to/out_dir \
+  --label fixtures/input/case01
 ```
+
+Notes:
+- `--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
 
 ### Demo mode (creates a tiny input tree for you)
 
