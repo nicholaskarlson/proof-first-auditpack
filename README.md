@@ -59,6 +59,8 @@ go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir \
 
 `--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
 
+If `--out` is inside `--in` (e.g. `--in . --out ./out`), auditpack will exclude the `--out` subtree from hashing to avoid "self-capturing" old packs.
+
 ### Verify a pack
 
 Verifies `manifest.sha256` (pack output integrity) and basic invariants on `manifest.json` (sorted paths, uniqueness, stable totals).

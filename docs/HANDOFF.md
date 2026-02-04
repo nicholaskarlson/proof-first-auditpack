@@ -71,6 +71,7 @@ go build -o bin/auditpack ./cmd/auditpack
 
 Notes:
 - `--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
+- If `--out` is inside `--in` (e.g. `--in . --out ./out`), auditpack will exclude the `--out` subtree from hashing to avoid "self-capturing" old packs.
 
 ### Demo mode (creates a tiny input tree for you)
 
