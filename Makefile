@@ -16,3 +16,6 @@ clean:
 verify-demo:
 	go run ./cmd/auditpack demo --out ./out
 	go run ./cmd/auditpack verify --out ./out --in ./out/demo_input --strict
+
+self-check:
+	go run ./cmd/auditpack self-check
