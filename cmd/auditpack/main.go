@@ -9,6 +9,8 @@ import (
 	"github.com/nicholaskarlson/proof-first-auditpack/internal/auditpack"
 )
 
+var version = "dev"
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -24,6 +26,8 @@ func main() {
 		verifyCmd(os.Args[2:])
 	case "self-check", "selfcheck", "check":
 		selfCheckCmd(os.Args[2:])
+	case "version", "--version", "-v":
+		versionCmd()
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -42,6 +46,7 @@ func usage() {
 	fmt.Println("  auditpack run    --in  <dir> --out <dir> [--label <string>]")
 	fmt.Println("  auditpack verify --pack <dir> [--in <dir>] [--strict]")
 	fmt.Println("  auditpack self-check [--keep] [--strict]")
+	fmt.Println("  auditpack version")
 	fmt.Println()
 	fmt.Println("v0: writes manifest.json + run_meta.json + manifest.sha256 (deterministic)")
 	fmt.Println("v0.2+: verify checks pack integrity and (optionally) input tree integrity")
@@ -61,7 +66,7 @@ func demoCmd(args []string) {
 	_ = os.WriteFile(filepath.Join(inDir, "nested", "world.txt"), []byte("world\n"), 0o644)
 
 	opts := auditpack.DefaultOptions()
-	opts.Version = "dev"
+	opts.Version = version
 	opts.InputLabel = "demo_input"
 
 	if err := auditpack.Build(inDir, *outDir, opts); err != nil {
@@ -87,7 +92,7 @@ func runCmd(args []string) {
 	}
 
 	opts := auditpack.DefaultOptions()
-	opts.Version = "dev"
+	opts.Version = version
 	// Record a stable label if provided; otherwise record the path as provided.
 	if *label != "" {
 		opts.InputLabel = *label
@@ -168,4 +173,8 @@ func selfCheckCmd(args []string) {
 	} else {
 		fmt.Println("OK: self-check passed")
 	}
+}
+
+func versionCmd() {
+	fmt.Printf("proof-first-auditpack %s\n", version)
 }

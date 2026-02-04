@@ -38,6 +38,9 @@ go run ./cmd/auditpack verify --pack ./out
 
 # self-check: build -> verify -> OK (temp dir)
 go run ./cmd/auditpack self-check
+
+# show build version
+go run ./cmd/auditpack version
 ```
 
 ### Optional convenience
@@ -46,6 +49,7 @@ go run ./cmd/auditpack self-check
 make test
 make demo
 make self-check
+make build VERSION=vX.Y.Z
 ```
 
 ## Core commands

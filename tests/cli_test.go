@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/nicholaskarlson/proof-first-auditpack/internal/manifest"
@@ -78,4 +79,49 @@ func TestCLI_VerifyFlagAliasAndLabel(t *testing.T) {
 	runCmdOK(t, bin, "verify", "--pack", outDir)
 	// Verify with the legacy alias.
 	runCmdOK(t, bin, "verify", "--out", outDir)
+}
+
+func buildAuditpackBinaryWithLdflags(t *testing.T, ldflags string) (repoRoot string, binPath string) {
+	t.Helper()
+
+	// Package tests is in ./tests, so repo root is ..
+	repoRoot = filepath.Clean(filepath.Join(".."))
+	absRoot, err := filepath.Abs(repoRoot)
+	if err != nil {
+		t.Fatalf("abs repo root: %v", err)
+	}
+	repoRoot = absRoot
+
+	binName := "auditpack"
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	binPath = filepath.Join(t.TempDir(), binName)
+
+	cmd := exec.Command("go", "build", "-ldflags", ldflags, "-o", binPath, "./cmd/auditpack")
+	cmd.Dir = repoRoot
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go build with ldflags failed: %v\nldflags=%q\n%s", err, ldflags, string(out))
+	}
+	return repoRoot, binPath
+}
+
+func TestCLI_VersionCommand(t *testing.T) {
+	_, bin := buildAuditpackBinaryWithLdflags(t, "-X main.version=v0.0.0-test")
+
+	want := "proof-first-auditpack v0.0.0-test"
+
+	for _, args := range [][]string{{"version"}, {"--version"}, {"-v"}} {
+		cmd := exec.Command(bin, args...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("version args %v failed: %v\n%s", args, err, string(out))
+		}
+		got := strings.TrimSpace(string(out))
+		if got != want {
+			t.Fatalf("version output mismatch for args %v: got %q want %q", args, got, want)
+		}
+	}
 }

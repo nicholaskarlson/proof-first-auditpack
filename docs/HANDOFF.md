@@ -52,8 +52,14 @@ Golden fixture check (included in tests):
 From the repo root:
 
 ```bash
-mkdir -p bin
-go build -o bin/auditpack ./cmd/auditpack
+# default build (version=dev)
+make build
+
+# embed a release version string
+make build VERSION=vX.Y.Z
+
+# check what you built
+./bin/auditpack version
 ```
 
 ---
@@ -164,13 +170,14 @@ A new developer should be able to:
 1. Clone the repo
 2. Run `go test ./...` successfully
 3. Build `bin/auditpack`
-4. Run `auditpack run --in ... --out ...`
-5. Verify the output pack with either:
+4. Run `auditpack version` to confirm the embedded version string
+5. Run `auditpack run --in ... --out ...`
+6. Verify the output pack with either:
    - `sha256sum -c manifest.sha256`, or
    - `auditpack verify --pack ...`
-6. (Optional) Verify an input tree matches the manifest:
+7. (Optional) Verify an input tree matches the manifest:
    - `auditpack verify --pack ... --in ... --strict`
-7. Run `auditpack self-check` and see `OK`
+8. Run `auditpack self-check` and see `OK`
 
 ---
 
