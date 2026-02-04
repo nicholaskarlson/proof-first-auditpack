@@ -20,6 +20,8 @@ func main() {
 		demoCmd(os.Args[2:])
 	case "run":
 		runCmd(os.Args[2:])
+	case "verify":
+		verifyCmd(os.Args[2:])
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -34,10 +36,12 @@ func usage() {
 	fmt.Println("proof-first-auditpack")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  auditpack demo --out ./out")
-	fmt.Println("  auditpack run  --in  <dir> --out <dir>")
+	fmt.Println("  auditpack demo   --out <dir>")
+	fmt.Println("  auditpack run    --in  <dir> --out <dir>")
+	fmt.Println("  auditpack verify --out <dir> [--in <dir>] [--strict]")
 	fmt.Println()
 	fmt.Println("v0: writes manifest.json + run_meta.json + manifest.sha256 (deterministic)")
+	fmt.Println("v0.2+: verify checks pack integrity and (optionally) input tree integrity")
 }
 
 func demoCmd(args []string) {
@@ -89,4 +93,26 @@ func runCmd(args []string) {
 	}
 
 	fmt.Printf("Run complete. Wrote audit pack to %s\n", *outDir)
+}
+
+func verifyCmd(args []string) {
+	fs := flag.NewFlagSet("verify", flag.ExitOnError)
+	outDir := fs.String("out", "./out", "audit pack directory")
+	inDir := fs.String("in", "", "optional: original input directory to verify against manifest.json")
+	strict := fs.Bool("strict", false, "if set: fail on extra input files not listed in manifest.json")
+	_ = fs.Parse(args)
+
+	if err := auditpack.VerifyPack(*outDir); err != nil {
+		fmt.Println("VERIFY FAIL:", err)
+		os.Exit(1)
+	}
+	fmt.Println("OK: pack integrity (manifest.sha256 + manifest.json invariants)")
+
+	if *inDir != "" {
+		if err := auditpack.VerifyInput(*inDir, *outDir, *strict); err != nil {
+			fmt.Println("VERIFY FAIL:", err)
+			os.Exit(1)
+		}
+		fmt.Println("OK: input tree matches manifest.json")
+	}
 }

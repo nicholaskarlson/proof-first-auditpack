@@ -12,3 +12,7 @@ build:
 
 clean:
 	rm -rf ./out ./bin
+
+verify-demo:
+	go run ./cmd/auditpack demo --out ./out
+	go run ./cmd/auditpack verify --out ./out --in ./out/demo_input --strict
