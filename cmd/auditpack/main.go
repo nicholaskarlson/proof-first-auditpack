@@ -22,6 +22,8 @@ func main() {
 		runCmd(os.Args[2:])
 	case "verify":
 		verifyCmd(os.Args[2:])
+	case "self-check", "selfcheck", "check":
+		selfCheckCmd(os.Args[2:])
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -39,6 +41,7 @@ func usage() {
 	fmt.Println("  auditpack demo   --out <dir>")
 	fmt.Println("  auditpack run    --in  <dir> --out <dir>")
 	fmt.Println("  auditpack verify --out <dir> [--in <dir>] [--strict]")
+	fmt.Println("  auditpack self-check [--keep] [--strict]")
 	fmt.Println()
 	fmt.Println("v0: writes manifest.json + run_meta.json + manifest.sha256 (deterministic)")
 	fmt.Println("v0.2+: verify checks pack integrity and (optionally) input tree integrity")
@@ -114,5 +117,28 @@ func verifyCmd(args []string) {
 			os.Exit(1)
 		}
 		fmt.Println("OK: input tree matches manifest.json")
+	}
+}
+
+func selfCheckCmd(args []string) {
+	fs := flag.NewFlagSet("self-check", flag.ExitOnError)
+	keep := fs.Bool("keep", false, "if set: keep the temp directory and print its path")
+	strict := fs.Bool("strict", true, "if set: fail if input has extra files not listed in manifest.json")
+	_ = fs.Parse(args)
+
+	root, err := auditpack.SelfCheck(auditpack.SelfCheckOptions{
+		Strict: *strict,
+		Keep:   *keep,
+	})
+	if err != nil {
+		fmt.Println("SELF-CHECK FAIL:", err)
+		os.Exit(1)
+	}
+
+	if *keep {
+		fmt.Println("OK: self-check passed")
+		fmt.Println("Kept temp dir:", root)
+	} else {
+		fmt.Println("OK: self-check passed")
 	}
 }
