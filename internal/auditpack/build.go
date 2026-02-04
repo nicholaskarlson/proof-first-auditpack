@@ -49,6 +49,31 @@ func Build(inDir, outDir string, opts Options) error {
 		label = inDir
 	}
 
+	// If the output directory is inside the input tree (a common workflow:
+	// --in . --out ./out), exclude that subtree so we never "self-capture" prior
+	// packs that happen to live under the input directory.
+	//
+	// We determine containment using absolute paths (stable across ./ and ..).
+	excludeRel := ""
+	if outDir != "" {
+		inAbs, errIn := filepath.Abs(inDir)
+		outAbs, errOut := filepath.Abs(outDir)
+		if errIn == nil && errOut == nil {
+			relOut, err := filepath.Rel(inAbs, outAbs)
+			if err == nil {
+				relOut = filepath.ToSlash(relOut)
+				relOut = path.Clean(relOut)
+				if relOut == "." {
+					return fmt.Errorf("outDir must not equal inDir: %s", outDir)
+				}
+				// If outDir is under inDir, relOut will not start with ../
+				if relOut != ".." && !strings.HasPrefix(relOut, "../") {
+					excludeRel = relOut
+				}
+			}
+		}
+	}
+
 	entries := make([]manifest.FileEntry, 0, 64)
 	var totalBytes int64
 
@@ -56,6 +81,24 @@ func Build(inDir, outDir string, opts Options) error {
 		if walkErr != nil {
 			return walkErr
 		}
+
+		// Exclude outDir subtree when outDir is within inDir.
+		if excludeRel != "" {
+			rel, err := filepath.Rel(inDir, p)
+			if err != nil {
+				return err
+			}
+			rel = filepath.ToSlash(rel)
+			rel = path.Clean(rel)
+
+			if rel == excludeRel || strings.HasPrefix(rel, excludeRel+"/") {
+				if d.IsDir() {
+					return fs.SkipDir
+				}
+				return nil
+			}
+		}
+
 		if d.IsDir() {
 			return nil
 		}
