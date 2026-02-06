@@ -3,6 +3,7 @@ package auditpack
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func writeFileAtomic(outDir, name string, data []byte) error {
@@ -29,7 +30,18 @@ func writeFileAtomic(outDir, name string, data []byte) error {
 
 	finalPath := filepath.Join(outDir, name)
 	if err := os.Rename(tmpName, finalPath); err != nil {
-		return err
+		// On Windows, os.Rename cannot replace an existing file.
+		// Best-effort: remove destination and retry to preserve "atomic overwrite" semantics.
+		if runtime.GOOS == "windows" {
+			if rmErr := os.Remove(finalPath); rmErr != nil && !os.IsNotExist(rmErr) {
+				return err
+			}
+			if err2 := os.Rename(tmpName, finalPath); err2 != nil {
+				return err2
+			}
+		} else {
+			return err
+		}
 	}
 	return os.Chmod(finalPath, 0o644)
 
