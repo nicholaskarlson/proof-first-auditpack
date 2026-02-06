@@ -4,7 +4,7 @@ VERSION ?= dev
 LDFLAGS := -X main.version=$(VERSION)
 
 test:
-	go test ./...
+	go test -count=1 ./...
 
 demo:
 	go run ./cmd/auditpack demo --out ./out

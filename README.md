@@ -28,7 +28,7 @@ This is intentionally **run-once, deterministic, and easy to hand off**.
 ## Quick start
 
 ```bash
-go test ./...
+go test -count=1 ./...
 
 # demo: generates a tiny input tree and writes a pack to ./out
 go run ./cmd/auditpack demo --out ./out
@@ -89,7 +89,7 @@ go run ./cmd/auditpack verify --pack /path/to/out_dir --in /path/to/input_dir --
 Golden tests verify outputs byte-for-byte:
 
 ```bash
-go test ./...
+go test -count=1 ./...
 ```
 
 ## Repo layout (high level)
