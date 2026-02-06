@@ -36,7 +36,7 @@ This is intentionally a **run-once, handoff-friendly CLI**.
 These must pass on a clean checkout:
 
 ```bash
-go test ./...
+go test -count=1 ./...
 ```
 
 Golden fixture check (included in tests):
@@ -168,7 +168,7 @@ The output directory will contain:
 A new developer should be able to:
 
 1. Clone the repo
-2. Run `go test ./...` successfully
+2. Run `go test -count=1 ./...` successfully
 3. Build `bin/auditpack`
 4. Run `auditpack version` to confirm the embedded version string
 5. Run `auditpack run --in ... --out ...`
