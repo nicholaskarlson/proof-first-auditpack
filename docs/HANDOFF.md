@@ -198,7 +198,7 @@ A new developer should be able to:
 This repo is designed so you do *not* need ongoing support:
 
 - No external dependencies beyond Go
-- No background processes
+- No background processess
 - Deterministic, test-defined behavior
 
 If you add features, keep the same philosophy: **simple CLI + fixtures + golden tests + clear docs**.
