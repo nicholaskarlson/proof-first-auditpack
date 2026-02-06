@@ -125,3 +125,26 @@ func TestCLI_VersionCommand(t *testing.T) {
 		}
 	}
 }
+
+
+func TestCLI_RunTwiceSameOutDir(t *testing.T) {
+	repoRoot, bin := buildAuditpackBinary(t)
+
+	inDir := filepath.Join(repoRoot, "fixtures", "input", "case01")
+	outDir := filepath.Join(t.TempDir(), "out")
+
+	runCmdOK(t, bin,
+		"run",
+		"--in", inDir,
+		"--out", outDir,
+		"--label", "fixtures/input/case01",
+	)
+
+	// Running again into the same output directory should overwrite cleanly on all OSes.
+	runCmdOK(t, bin,
+		"run",
+		"--in", inDir,
+		"--out", outDir,
+		"--label", "fixtures/input/case01",
+	)
+}
