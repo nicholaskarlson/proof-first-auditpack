@@ -1,4 +1,4 @@
-.PHONY: test demo build clean verify-demo self-check
+.PHONY: test demo verify build clean verify-demo self-check
 
 VERSION ?= dev
 LDFLAGS := -X main.version=$(VERSION)
@@ -8,6 +8,8 @@ test:
 
 demo:
 	go run ./cmd/auditpack demo --out ./out
+
+verify: test demo
 
 build:
 	mkdir -p bin

@@ -3,6 +3,17 @@
 This document is written for a future maintainer (or client) who needs to **build, run, and trust** this tool
 without contacting the original author.
 
+## Canonical commands
+
+```bash
+# Proof gate (one command)
+make verify
+
+# Proof gates (portable, no Makefile)
+go test -count=1 ./...
+go run ./cmd/auditpack demo --out ./out
+```
+
 ## What this tool does
 
 `proof-first-auditpack` generates a small “audit pack” for a directory of files:
