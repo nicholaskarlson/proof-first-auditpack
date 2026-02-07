@@ -5,3 +5,5 @@
 *.csv text eol=lf
 *.json text eol=lf
 *.yml text eol=lf
+
+*.py text eol=lf
