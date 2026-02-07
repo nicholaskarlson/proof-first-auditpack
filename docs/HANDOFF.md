@@ -72,12 +72,24 @@ make build VERSION=vX.Y.Z
 # input: directory tree to record
 # out:   directory that will receive manifest/meta/sha files
 ./bin/auditpack run --in /path/to/input_dir --out /path/to/out_dir \
-  --label fixtures/input/case01
 ```
 
 Notes:
 - `--label` is optional. Use it when `--in` is an absolute path and you want stable, portable metadata.
 - If `--out` is inside `--in` (e.g. `--in . --out ./out`), auditpack will exclude the `--out` subtree from hashing to avoid "self-capturing" old packs.
+
+
+## Optional: Python check (stdlib only)
+
+```bash
+# Go run (fixture case01)
+go run ./cmd/auditpack demo --out ./out
+
+# Python verification (pack + input tree)
+python3 examples/python/verify_auditpack_case.py --in ./out/demo_input --pack ./out
+```
+
+This is an independent verification lane (no third-party deps).
 
 ### Demo mode (creates a tiny input tree for you)
 
