@@ -25,22 +25,28 @@ Deterministic audit pack generator (Go-first): SHA-256 manifest + run metadata +
 
 This is intentionally **run-once, deterministic, and easy to hand off**.
 
+## Canonical commands
+
+```bash
+# Proof gate (one command)
+make verify
+
+# Proof gates (portable, no Makefile)
+go test -count=1 ./...
+go run ./cmd/auditpack demo --out ./out
+```
+
 ## Quick start
 
 ```bash
-go test -count=1 ./...
-
-# demo: generates a tiny input tree and writes a pack to ./out
+# Demo: generates a tiny input tree and writes a pack to ./out (then verifies)
 go run ./cmd/auditpack demo --out ./out
 
-# verify the pack (Go verifier)
-go run ./cmd/auditpack verify --pack ./out
+# Build a pack from your own input tree
+go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir
 
-# self-check: build -> verify -> OK (temp dir)
-go run ./cmd/auditpack self-check
-
-# show build version
-go run ./cmd/auditpack version
+# Verify a pack
+go run ./cmd/auditpack verify --pack /path/to/out_dir
 ```
 
 ### Optional convenience

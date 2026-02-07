@@ -74,6 +74,15 @@ func demoCmd(args []string) {
 		os.Exit(1)
 	}
 
+	if err := auditpack.VerifyPack(*outDir); err != nil {
+		fmt.Println("VERIFY FAIL:", err)
+		os.Exit(1)
+	}
+	if err := auditpack.VerifyInput(inDir, *outDir, true); err != nil {
+		fmt.Println("VERIFY FAIL:", err)
+		os.Exit(1)
+	}
+
 	fmt.Printf("Demo complete. Wrote audit pack to %s\n", *outDir)
 }
 

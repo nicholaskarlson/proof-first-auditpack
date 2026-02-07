@@ -17,3 +17,4 @@ jobs:
         with:
           go-version: 'stable'
       - run: go test -count=1 ./...
+      - run: go run ./cmd/auditpack demo --out ./out
