@@ -39,8 +39,12 @@ go run ./cmd/auditpack demo --out ./out
 ## Quick start
 
 ```bash
-# Demo: generates a tiny input tree and writes a pack to ./out (then verifies)
+# Demo: recomputes fixture case01 and verifies pack outputs match goldens
 go run ./cmd/auditpack demo --out ./out
+# outputs land in ./out/case01
+
+# Optional: synthetic quick demo (tiny in-memory input tree)
+go run ./cmd/auditpack demo --out ./out --quick
 
 # Build a pack from your own input tree
 go run ./cmd/auditpack run --in /path/to/input_dir --out /path/to/out_dir

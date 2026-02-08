@@ -26,8 +26,8 @@ def read_text_lf(p: Path) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="in_dir", default="out/demo_input", help="input directory to verify")
-    ap.add_argument("--pack", dest="pack_dir", default="out", help="audit pack output directory")
+    ap.add_argument("--in", dest="in_dir", default="fixtures/input/case01", help="input directory to verify")
+    ap.add_argument("--pack", dest="pack_dir", default="out/case01", help="audit pack output directory")
     args = ap.parse_args()
 
     repo = Path(".")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -54,11 +55,64 @@ func usage() {
 
 func demoCmd(args []string) {
 	fs := flag.NewFlagSet("demo", flag.ExitOnError)
-	outDir := fs.String("out", "./out", "output directory")
+	outRoot := fs.String("out", "./out", "output root directory")
+	quick := fs.Bool("quick", false, "if set: run a tiny synthetic input demo (does not compare to fixtures)")
 	_ = fs.Parse(args)
 
+	if *quick {
+		demoQuick(*outRoot)
+		return
+	}
+
+	caseName := "case01"
+	inDir := filepath.Join("fixtures", "input", caseName)
+	expDir := filepath.Join("fixtures", "expected", caseName)
+	packDir := filepath.Join(*outRoot, caseName)
+
+	_ = os.RemoveAll(packDir)
+
+	opts := auditpack.DefaultOptions()
+	opts.Version = version
+	// Use forward slashes so fixtures and goldens are byte-stable across OSes.
+	opts.InputLabel = filepath.ToSlash(filepath.Join("fixtures", "input", caseName))
+
+	if err := auditpack.Build(inDir, packDir, opts); err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	if err := auditpack.VerifyPack(packDir); err != nil {
+		fmt.Println("VERIFY FAIL:", err)
+		os.Exit(1)
+	}
+	if err := auditpack.VerifyInput(inDir, packDir, true); err != nil {
+		fmt.Println("VERIFY FAIL:", err)
+		os.Exit(1)
+	}
+
+	for _, name := range []string{"manifest.json", "manifest.sha256", "run_meta.json"} {
+		expB, err := os.ReadFile(filepath.Join(expDir, name))
+		if err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
+		gotB, err := os.ReadFile(filepath.Join(packDir, name))
+		if err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
+		if !bytes.Equal(gotB, expB) {
+			fmt.Printf("MISMATCH: %s (%s)\n", caseName, name)
+			os.Exit(1)
+		}
+	}
+
+	fmt.Printf("OK: demo outputs match fixtures (%s)\n", caseName)
+}
+
+func demoQuick(outDir string) {
 	// Create a tiny deterministic demo input under outDir.
-	inDir := filepath.Join(*outDir, "demo_input")
+	inDir := filepath.Join(outDir, "demo_input")
 	_ = os.MkdirAll(inDir, 0o755)
 
 	_ = os.WriteFile(filepath.Join(inDir, "hello.txt"), []byte("hello\n"), 0o644)
@@ -69,21 +123,21 @@ func demoCmd(args []string) {
 	opts.Version = version
 	opts.InputLabel = "demo_input"
 
-	if err := auditpack.Build(inDir, *outDir, opts); err != nil {
+	if err := auditpack.Build(inDir, outDir, opts); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
-	if err := auditpack.VerifyPack(*outDir); err != nil {
+	if err := auditpack.VerifyPack(outDir); err != nil {
 		fmt.Println("VERIFY FAIL:", err)
 		os.Exit(1)
 	}
-	if err := auditpack.VerifyInput(inDir, *outDir, true); err != nil {
+	if err := auditpack.VerifyInput(inDir, outDir, true); err != nil {
 		fmt.Println("VERIFY FAIL:", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Demo complete. Wrote audit pack to %s\n", *outDir)
+	fmt.Printf("OK: quick demo complete (pack=%s)\n", outDir)
 }
 
 func runCmd(args []string) {

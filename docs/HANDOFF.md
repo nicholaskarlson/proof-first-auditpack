@@ -97,15 +97,19 @@ Notes:
 go run ./cmd/auditpack demo --out ./out
 
 # Python verification (pack + input tree)
-python3 examples/python/verify_auditpack_case.py --in ./out/demo_input --pack ./out
+python3 examples/python/verify_auditpack_case.py --in ./fixtures/input/case01 --pack ./out/case01
 ```
 
 This is an independent verification lane (no third-party deps).
 
-### Demo mode (creates a tiny input tree for you)
+### Demo mode (fixture lane: recomputes and verifies goldens)
 
 ```bash
 ./bin/auditpack demo --out ./out
+ls -la ./out/case01
+
+# Optional: synthetic quick demo (tiny input tree)
+./bin/auditpack demo --out ./out --quick
 ls -la ./out
 ```
 

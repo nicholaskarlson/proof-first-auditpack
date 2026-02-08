@@ -17,5 +17,5 @@ From repo root:
 go run ./cmd/auditpack demo --out ./out
 
 # Python verification (pack + input tree)
-python3 examples/python/verify_auditpack_case.py --in ./out/demo_input --pack ./out
+python3 examples/python/verify_auditpack_case.py --in ./fixtures/input/case01 --pack ./out/case01
 ```
