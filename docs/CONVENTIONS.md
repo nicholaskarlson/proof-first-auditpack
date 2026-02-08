@@ -37,8 +37,8 @@ Fail fast (do not guess) on:
 
 Layout:
 
-- fixtures/input/<case>/... inputs
-- fixtures/expected/<case>/... goldens
+- `fixtures/input/CASE/...` inputs
+- `fixtures/expected/CASE/...` goldens
 
 Tests and demos should run a case, write outputs to a temp or out directory, then byte-compare against fixtures/expected.
 
@@ -46,5 +46,5 @@ Tests and demos should run a case, write outputs to a temp or out directory, the
 
 For cases that should fail, commit:
 
-- fixtures/input/<case>/... inputs
-- fixtures/expected/<case>/error.txt expected error text (end with a single newline)
+- `fixtures/input/CASE/...` inputs
+- `fixtures/expected/CASE/error.txt` expected error text (end with a single newline)
