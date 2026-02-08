@@ -10,7 +10,7 @@ Deterministic audit pack generator (Go-first): SHA-256 manifest + run metadata +
 `proof-first-auditpack` is a small, handoff-friendly CLI that turns an input directory tree into a verifiable “audit pack”:
 
 - `manifest.json` — deterministic list of files (relative paths), sizes, SHA-256 hashes
-- `run_meta.json` — how the pack was produced (tool version, timestamps, counts)
+- `run_meta.json` — how the pack was produced (tool, version, input label, counts)
 - `manifest.sha256` — checksums for the *pack outputs* so anyone can validate the pack with standard tools
 
 **Primary use case:** produce a repeatable, verifiable record of “these exact inputs existed at this time”.
