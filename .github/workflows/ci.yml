@@ -10,11 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ['1.22.x', 'stable']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version: ${{ matrix.go }}
       - run: go test -count=1 ./...
       - run: go run ./cmd/auditpack demo --out ./out
