@@ -19,7 +19,7 @@ go run ./cmd/auditpack demo --out ./out
 `proof-first-auditpack` generates a small “audit pack” for a directory of files:
 
 - `manifest.json` — a deterministic list of files (relative paths), sizes, and SHA-256 hashes
-- `run_meta.json` — how the pack was produced (tool + version + timestamps + counts)
+- `run_meta.json` — how the pack was produced (tool + version + input label + counts)
 - `manifest.sha256` — checksums for the *outputs* so the pack can be validated with standard tools
 
 **Primary use case:** produce a repeatable, verifiable record of “these exact inputs existed at this time”.
